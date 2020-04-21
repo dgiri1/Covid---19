@@ -1,4 +1,3 @@
-from config import *
 from collections import defaultdict
 from shapely.geometry import Polygon
 from shapely.ops import cascaded_union
@@ -14,7 +13,7 @@ from sampling_utils import *
 from collections import OrderedDict
 import isoweek
 import gc
-from BaseModel import BaseModel
+# from BaseModel import BaseModel
 import itertools as it
 import os
 
@@ -31,7 +30,7 @@ def load_data(disease, prediction_region, states, separator=","):
         separator:          string delimiter
         """
     # load raw data from csv file into a pandas dataframe
-    data = pd.read_csv("../data/diseases/{}.csv".format(disease),sep=separator,encoding='iso-8859-1',index_col=0)
+    data = pd.read_csv("/content/Covid---19/data/disease/{}.csv".format(disease),sep=separator,encoding='iso-8859-1',index_col=0)
     # exclude data reported for unknown counties
     if "99999" in data.columns:
         data.drop("99999", inplace=True, axis=1)
@@ -136,14 +135,14 @@ def set_file_permissions(filename, uid, gid, permissions=0o660):
 
 
 def load_model(disease, use_age, use_eastwest):
-    filename_model = "../data/mcmc_samples/model_{}_{}_{}.pkl".format(disease, use_age, use_eastwest)
+    filename_model = "/content/Covid---19/data/mcmc_samples/model_{}_{}_{}.pkl".format(disease, use_age, use_eastwest)
 
     with open(filename_model,"rb") as f:
         model = pkl.load(f)
     return model
 
 def load_trace(disease, use_age, use_eastwest):
-    filename_params = "../data/mcmc_samples/parameters_{}_{}_{}".format(disease, use_age, use_eastwest)
+    filename_params = "/content/Covid---19/data/mcmc_samples/parameters_{}_{}_{}".format(disease, use_age, use_eastwest)
 
     model = load_model(disease, use_age, use_eastwest)
     with model:
@@ -154,7 +153,7 @@ def load_trace(disease, use_age, use_eastwest):
 
 def load_pred(disease, use_age, use_eastwest):
     # Load our prediction samples
-    filename_pred = "../data/mcmc_samples/predictions_{}_{}_{}.pkl".format(disease, use_age, use_eastwest)
+    filename_pred = "/content/Covid---19/data/mcmc_samples/predictions_{}_{}_{}.pkl".format(disease, use_age, use_eastwest)
     with open(filename_pred,"rb") as f:
         res = pkl.load(f)
     return res

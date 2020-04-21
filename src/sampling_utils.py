@@ -131,7 +131,7 @@ class IAEffectSampler(object):
         res = np.zeros((len(days), len(states), self.num_features), dtype=np.float32)
         for i,day in enumerate(days):
             for j,state in enumerate(states):
-                idx = ((day.date()-datetime.timedelta(days=self.time_horizon)) <= self.data.index)*(self.data.index < day)
+                idx = ((day - pd.Timedelta(days=self.time_horizon)) <= self.data.index)*(self.data.index < day)
                 # print("sampling day {} for state {} using data in range {}".format(day, state, idx))
                 t_data, x_data = sample_time_and_space(self.data.iloc[idx], self.times_by_day, self.locations_by_state)
                 t_pred, x_pred = sample_time_and_space(pd.DataFrame(self.num_tps, index=[day], columns=[state]), self.times_by_day, self.locations_by_state)
