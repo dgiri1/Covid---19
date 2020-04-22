@@ -10,20 +10,23 @@ class SpatioTemporalFeature(object):
         self._call_ = np.frompyfunc(self.call, 2, 1)
 
     def __call__(self, times, locations):
-        return self._call_(np.asarray(times).reshape((-1,1)), np.asarray(locations).reshape((1,-1))).astype(np.float32)
+        # print("Type of days in {}:{}".format("__call__",type(times)))
+        np_date_array = np.array([pd.Timestamp(i.year,i.month,i.day) for i in times])
+        return self._call_(np_date_array.reshape((-1,1)), np.asarray(locations).reshape((1,-1))).astype(np.float32)
 
 class SpatioTemporalDailyDemographicsFeature(SpatioTemporalFeature):
     def __init__(self, state_dict, group, scale=1.0):
         self.dict = {
             (day, state): val*scale
-            for state,values in state_dict.items()
+            for state,values in state_dict.items() if state not in ('0400000US72')
             for (g, day),val in values["demographics"].items()
             if g == group
         }
         super().__init__()
 
     def call(self, yearday,state):
-        return self.dict.get((yearday,state))
+        key = "{}/{}/20".format(yearday.month,yearday.day)
+        return self.dict.get((key,state))
 
 class SpatialEastWestFeature(SpatioTemporalFeature):
     def __init__(self, state_dict):
@@ -46,6 +49,7 @@ class TemporalFourierFeature(SpatioTemporalFeature):
         super().__init__()
 
     def call(self, t, x):
+        # print("Type of days in {}:{}".format("call",type(t)))
         return self.fun((t.weekofyear-self.t0)/self.scale*self.τ)
 
 class TemporalSigmoidFeature(SpatioTemporalFeature):
@@ -56,6 +60,7 @@ class TemporalSigmoidFeature(SpatioTemporalFeature):
         super().__init__()
 
     def call(self, t, x):
+        # print("Type of days in {}:{}".format("call",type(t)))
         return sp.special.expit((t.day-self.t0)/self.scale)
 
 
@@ -139,6 +144,7 @@ class BaseModel(object):
 
 
     def evaluate_features(self, days, states):
+        # print("Type of days in {}:{}".format("evaluate_features",type(days)))
         all_features = {}
         for group_name,features in self.features.items():
             group_features = {}
@@ -150,7 +156,7 @@ class BaseModel(object):
 
     def init_model(self, target):
         days,states = target.index, target.columns
-
+        # print("Type of days in {}:{}".format("init_model",type(days)))
         # extract features
         features = self.evaluate_features(days, states)
         Y_obs = target.stack().values.astype(np.float32)
@@ -167,7 +173,7 @@ class BaseModel(object):
         num_t_t = T_T.shape[1]
         num_ts = TS.shape[1]
         num_s = S.shape[1]
-
+        print((num_obs,num_s,num_t_s,num_t_t,num_ts))
 
         with pm.Model() as self.model:
             # interaction effects are generated externally -> flat prior
@@ -187,7 +193,7 @@ class BaseModel(object):
 
             # calculate interaction effect
             IA_ef = tt.dot(tt.dot(IA, self.Q), W_ia)
-
+            (print(f"IA:{IA.shape},T_S:{T_S.shape},W_t_s:{W_t_s.shape},T_T:{T_T.shape},W_t_t:{W_t_t.shape},TS:{TS.shape},W_ts:{W_ts.shape},S:{S.shape},W_s:{W_s.shape}"))
             # calculate mean rates
             μ = pm.Deterministic("μ", 
                 # (1.0+tt.exp(IA_ef))*
