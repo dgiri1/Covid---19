@@ -129,10 +129,10 @@ class BaseModel(object):
         last_month=self.trange[1].month
         self.features = {
                 "temporal_seasonal": {"temporal_fourier_{}".format(i): TemporalFourierFeature(i, 1, 30) for i in range(4)} if self.include_temporal else {},
-                "temporal_trend": {"temporal_sigmoid_{}".format(i): TemporalSigmoidFeature(1, 2.0) for i in range(first_month,last_month+1)} if self.include_temporal else {},
+                "temporal_trend": {"temporal_sigmoid_{}".format(i): TemporalSigmoidFeature(1, 4.0) for i in range(first_month,last_month+1)} if self.include_temporal else {},
                 "spatiotemporal": {"demographic_{}".format(group): SpatioTemporalDailyDemographicsFeature(self.state_info, group) for group in ["[0-5)", "[5-20)", "[20-65)"]} if self.include_demographics else {},
                 "spatial": {"eastwest": SpatialEastWestFeature(self.state_info)} if self.include_eastwest else {},
-                "exposure": {"exposure": SpatioTemporalDailyDemographicsFeature(self.state_info, "total", 1.0/100000)}
+                "exposure": {"exposure": SpatioTemporalDailyDemographicsFeature(self.state_info, "total", 1.0/1000000)}
             }
         
         self.Q = np.eye(16, dtype=np.float32)
