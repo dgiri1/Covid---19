@@ -37,6 +37,7 @@ def load_data(disease, prediction_region, states, separator=","):
     # exclude data for regions outside of region of interest
     data = data.loc[:, list(filter(lambda sid: prediction_region in states[sid]["region"], data.columns))]
     data.index = pd.to_datetime(data.index)
+    data = data.sort_index()
     return data
 
 def split_data(
