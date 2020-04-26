@@ -27,6 +27,18 @@ class SpatioTemporalDailyDemographicsFeature(SpatioTemporalFeature):
     def call(self, yearday,state):
         key = "{}/{}/20".format(yearday.month,yearday.day)
         return self.dict.get((key,state))
+    
+class TemporalSigmoidGrowthFeature(SpatioTemporalFeature):
+    # Sigmoidal growth
+    def __init__(self, t0, scale):
+        self.t0 = t0
+        self.scale = scale
+        super().__init__()
+
+    def call(self, t, x):
+        # print("Type of days in {}:{}".format("call",type(t)))
+        return sp.special.expit((t.weekofyear-self.t0)/self.scale)
+
 
 class SpatialEastWestFeature(SpatioTemporalFeature):
     def __init__(self, state_dict):
@@ -128,8 +140,8 @@ class BaseModel(object):
         first_month=self.trange[0].month
         last_month=self.trange[1].month
         self.features = {
-                "temporal_seasonal": {"temporal_fourier_{}".format(i): TemporalFourierFeature(i, 1, 30) for i in range(4)} if self.include_temporal else {},
-                "temporal_trend": {"temporal_sigmoid_{}".format(i): TemporalSigmoidFeature(1, 4.0) for i in range(first_month,last_month+1)} if self.include_temporal else {},
+                "temporal_seasonal": {"temporal_fourier_{}".format(i): TemporalFourierFeature(i, 1, 30) for i in range(4)} if False else {},
+                "temporal_trend": {"temporal_sigmoid_{}".format(i): TemporalSigmoidGrowthFeature(10, i/2) for i in range(first_month,last_month+1)} if self.include_temporal else {},
                 "spatiotemporal": {"demographic_{}".format(group): SpatioTemporalDailyDemographicsFeature(self.state_info, group) for group in ["[0-5)", "[5-20)", "[20-65)"]} if self.include_demographics else {},
                 "spatial": {"eastwest": SpatialEastWestFeature(self.state_info)} if self.include_eastwest else {},
                 "exposure": {"exposure": SpatioTemporalDailyDemographicsFeature(self.state_info, "total", 1.0/1000000)}
@@ -181,9 +193,9 @@ class BaseModel(object):
 
             # priors
             #δ = 1/√α
-            δ     = pm.HalfCauchy("δ", 10, testval=1.0)
+            δ     = pm.HalfCauchy("δ", 2, testval=1.0)
             α     = pm.Deterministic("α", np.float32(1.0)/δ)
-            W_ia  = pm.Normal("W_ia", mu=0, sd=10, testval=np.zeros(self.num_ia), shape=self.num_ia)
+            W_ia  = pm.Normal("W_ia", mu=0, sd=3, testval=np.zeros(self.num_ia), shape=self.num_ia)
             W_t_s = pm.Normal("W_t_s", mu=0, sd=10, testval=np.zeros(num_t_s), shape=num_t_s)
             W_t_t = pm.Normal("W_t_t", mu=0, sd=10, testval=np.zeros(num_t_t), shape=num_t_t)
             W_ts  = pm.Normal("W_ts", mu=0, sd=10, testval=np.zeros(num_ts), shape=num_ts)
